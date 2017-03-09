@@ -75,7 +75,7 @@ int main(int argc,  char** argv) {
 	asio::ip::tcp::socket socket(io_service);
 
 	asio::ip::tcp::endpoint endpoint(
-			asio::ip::address::from_string("163.172.51.240"), 6723);
+			asio::ip::address::from_string(argv[1]), atoi(argv[2]));
 
 	socket.connect(endpoint);
 	if(socket.is_open()) {
