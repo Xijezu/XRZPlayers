@@ -22,7 +22,7 @@ int main(int argc,  char** argv) {
 	 * the current index would be at 20, making decryption useless. The game server uses
 	 * 2 separate classes, too. Yes, I suck at explaining.
 	*/
-	std::unique_ptr<XRC4Cipher> ptr_encrypt(new XRC4Cipher), ptr_decrypt(new XRC4Cipher);
+	std::unique_ptr<XRC4Cipher> ptr_encrypt{new XRC4Cipher}, ptr_decrypt{new XRC4Cipher};
 	ptr_encrypt->SetKey("}h79q~B%al;k'y $E");
 	ptr_decrypt->SetKey("}h79q~B%al;k'y $E");
 
@@ -37,7 +37,7 @@ int main(int argc,  char** argv) {
 	asio::io_service io_service;
 	asio::ip::tcp::socket socket{io_service};
 	// Create an endpoint: address & port taken from args
-	asio::ip::tcp::endpoint endpoint(asio::ip::address::from_string(argv[1]), atoi(argv[2]));
+	asio::ip::tcp::endpoint endpoint(asio::ip::address::from_string(argv[1]), (uint16_t)atoi(argv[2]));
 
 	// Connect to the endpoint
 	socket.connect(endpoint);
