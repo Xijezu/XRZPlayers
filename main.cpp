@@ -9,7 +9,7 @@
 #include <iostream>
 
 int main(int argc,  char** argv) {
-	
+
 	// Making sure the args are there
 	if(argc != 3) {
 		std::cout << "You're missing the IP and port:" << std::endl;
