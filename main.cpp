@@ -39,14 +39,22 @@ int main(int argc,  char** argv) {
 	// Create an endpoint: address & port taken from args
 	asio::ip::tcp::endpoint endpoint(asio::ip::address::from_string(argv[1]), (uint16_t)atoi(argv[2]));
 
-	// Connect to the endpoint
-	socket.connect(endpoint);
+	try {
+		// Connect to the endpoint
+		socket.connect(endpoint);
+	} catch (std::system_error ex) {
+		std::cerr << "Error in " << __FILE__ << ":" << __LINE__ << ": socket.connect(endpoint);" << std::endl;
+		std::cerr << "Probably not connected. Error message:" << std::endl;
+		std::cerr << ex.what() << std::endl;
+		return 0;
+	}
 
 	if (socket.is_open()) {
 
-		std::cout << "Open, attempt to send packet..." << std::endl;
+		std::cout << "Open, attempting to send packet..." << std::endl;
 		// Don't mind the casting here, that's the easiest way to do stuff
-		// We need to cast the struct itself into a vector so it'll be usable
+		// We need to cast the struct itself into a char ptr so it'll be usable
+		// as a buffer
 		auto pktArray = reinterpret_cast<char *>(&pktVersion);
 		// Encode the packet
 		ptr_encrypt->Encode(pktArray, pktArray, sizeof(TS_CA_VERSION), false);
@@ -55,7 +63,16 @@ int main(int argc,  char** argv) {
 
 		// Now we're creating a buffer for the response
 		boost::array<char, 1024> bufResponse;
-		auto nReceived = socket.receive(asio::buffer(bufResponse));
+		size_t nReceived{0};
+		try {
+			nReceived = socket.receive(asio::buffer(bufResponse));
+		}
+		catch(std::system_error ex) {
+			std::cerr << "Error in " << __FILE__ << ":" << __LINE__ << ": socket.receive()" << std::endl;
+			std::cerr << "Probably not using glandu2's auth emu. Error message:" << std::endl;
+			std::cerr << ex.what() << std::endl;
+			return 0;
+		}
 		// Now, nReceived contains the length of the array we just received.
 		// So if there was a response (if the length is greater than zero) we try to process it
 		if (nReceived > 0) {
@@ -63,8 +80,7 @@ int main(int argc,  char** argv) {
 			// Decrypting the response. Btw, don't mind the uint-cast there, just wanna get rid of
 			// the warning
 			ptr_decrypt->Decode(&bufResponse[0], &bufResponse[0], (uint32_t)nReceived, false);
-			// Seriously don't wanna use pointers here, not sure if this right here may cause a memory leak
-			// Well, I don't mind, it does its job. :^)
+			// Casting the result as packet
 			TS_AC_RESULT result = *reinterpret_cast<TS_AC_RESULT *>(bufResponse.data());
 			/* And finally giving the output.
 			 * When you set the szVersion of the version packet to "TEST" it returns the amount of people
