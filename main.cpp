@@ -4,14 +4,16 @@
 // Boost stuff
 #include <boost/system/error_code.hpp>
 #include <boost/array.hpp>
-#include <asio.hpp>
+#include <boost/asio.hpp>
 
 #include <iostream>
 
-int main(int argc,  char** argv) {
+int main(int argc, char **argv)
+{
 
 	// Making sure the args are there
-	if(argc != 3) {
+	if (argc != 3)
+	{
 		std::cout << "You're missing the IP and port:" << std::endl;
 		std::cout << "XRZPlayers [IP] [PORT]" << std::endl;
 		return 0;
@@ -28,28 +30,32 @@ int main(int argc,  char** argv) {
 
 	// Creating a TS_CA_VERSION packet
 	TS_CA_VERSION pktVersion;
-	pktVersion.id = 10001; // the ID of the packet is 10001
+	pktVersion.id = 50; // the ID of the packet is 10001
 	strcpy(pktVersion.szVersion, "TEST");
 	pktVersion.size = 20; // Size is always 20. I honestly can't remember if the header counts to that, too,
 						  // but in this case I used the size of the inner packet. Works with glandu2's auth.
 
 	// Initializing our network stuff
-	asio::io_service io_service;
-	asio::ip::tcp::socket socket{io_service};
+	boost::asio::io_service io_service;
+	boost::asio::ip::tcp::socket socket{io_service};
 	// Create an endpoint: address & port taken from args
-	asio::ip::tcp::endpoint endpoint(asio::ip::address::from_string(argv[1]), (uint16_t)atoi(argv[2]));
+	boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(argv[1]), (uint16_t)atoi(argv[2]));
 
-	try {
+	try
+	{
 		// Connect to the endpoint
 		socket.connect(endpoint);
-	} catch (std::system_error ex) {
+	}
+	catch (std::system_error ex)
+	{
 		std::cerr << "Error in " << __FILE__ << ":" << __LINE__ << ": socket.connect(endpoint);" << std::endl;
 		std::cerr << "Probably not connected. Error message:" << std::endl;
 		std::cerr << ex.what() << std::endl;
 		return 0;
 	}
 
-	if (socket.is_open()) {
+	if (socket.is_open())
+	{
 
 		std::cout << "Open, attempting to send packet..." << std::endl;
 		// Don't mind the casting here, that's the easiest way to do stuff
@@ -59,15 +65,17 @@ int main(int argc,  char** argv) {
 		// Encode the packet
 		ptr_encrypt->Encode(pktArray, pktArray, sizeof(TS_CA_VERSION), false);
 		// And finally send it
-		socket.send(asio::buffer(pktArray, sizeof(TS_CA_VERSION)));
+		socket.send(boost::asio::buffer(pktArray, sizeof(TS_CA_VERSION)));
 
 		// Now we're creating a buffer for the response
 		boost::array<char, 1024> bufResponse;
 		size_t nReceived{0};
-		try {
-			nReceived = socket.receive(asio::buffer(bufResponse));
+		try
+		{
+			nReceived = socket.receive(boost::asio::buffer(bufResponse));
 		}
-		catch(std::system_error ex) {
+		catch (std::system_error ex)
+		{
 			std::cerr << "Error in " << __FILE__ << ":" << __LINE__ << ": socket.receive()" << std::endl;
 			std::cerr << "Probably not using glandu2's auth emu. Error message:" << std::endl;
 			std::cerr << ex.what() << std::endl;
@@ -75,7 +83,8 @@ int main(int argc,  char** argv) {
 		}
 		// Now, nReceived contains the length of the array we just received.
 		// So if there was a response (if the length is greater than zero) we try to process it
-		if (nReceived > 0) {
+		if (nReceived > 0)
+		{
 			std::cout << "Received packet from server!" << std::endl;
 			// Decrypting the response. Btw, don't mind the uint-cast there, just wanna get rid of
 			// the warning
@@ -92,10 +101,10 @@ int main(int argc,  char** argv) {
 			std::cout << "result: " << result.result << std::endl;
 			// We need to xor it back to the actual value - glandu2 "encrypted" it.
 			std::cout << "value: " << (result.value ^ 0xADADADAD) << std::endl;
-
 		}
 	}
-	else {
+	else
+	{
 		std::cerr << "Cannot establish connection." << std::endl;
 	}
 
